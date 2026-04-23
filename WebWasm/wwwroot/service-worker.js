@@ -74,7 +74,7 @@ self.addEventListener('fetch', () => { });
 async function saveNotification(payload) {
 	try {
 		const db = await new Promise((resolve, reject) => {
-			const req = indexedDB.open('webwasm-db', 1);
+			const req = indexedDB.open('proda-db', 1);
 			req.onupgradeneeded = (e) => {
 				const db = e.target.result;
 				if (!db.objectStoreNames.contains('notifications')) {

@@ -81,7 +81,7 @@ else
 				fcmToken = token;
 				
 				// Send token to backend
-				var info = new DeviceTokenInfo(fcmToken, "WebWasm PWA", new Dictionary<string, string>
+				var info = new DeviceTokenInfo(fcmToken, "ProdA PWA", new Dictionary<string, string>
 				{
 					{ "platform", "web" },
 					{ "userAgent", await JSRuntime.InvokeAsync<string>("eval", "navigator.userAgent") }
