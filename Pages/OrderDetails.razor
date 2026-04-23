@@ -1,0 +1,307 @@
+@page "/orders/{Id:guid}"
+@using WebWasm.Models
+@using WebWasm.Components
+
+<PageTitle>Order Details</PageTitle>
+
+<ConfirmDialog IsOpen="@_isConfirmOpen"
+			   Title="@_confirmTitle"
+			   Message="@_confirmMessage"
+			   OnConfirm="@OnConfirmDialog"
+			   OnCancel="@OnCancelDialog" />
+
+@if (_order == null)
+{
+	<p>Loading details...</p>
+}
+else
+{
+	<div class="page-header">
+		<h1>Order @_order.Name</h1>
+		<p class="page-subtitle">@_order.Id</p>
+	</div>
+
+	<!-- Actions -->
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Management</h3>
+		</div>
+		<div class="info-item">
+			@GetAdminState()
+		</div>
+		<div class="controls-row">
+			<button class="btn btn-warning" @onclick="RequestResetPayments">Reset Payments</button>
+			
+			<div class="status-control">
+				<select @bind="_newStatus" class="form-control">
+					@foreach (var status in Enum.GetValues<OrderStatus>())
+					{
+						<option value="@status">@status</option>
+					}
+				</select>
+				<input @bind="_newState" class="form-control" placeholder="State message (optional)" />
+				<button class="btn btn-primary" @onclick="RequestUpdateStatus">Update Status</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Main Info -->
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Order Information</h3>
+		</div>
+		<div class="info-grid">
+			<div class="info-item"><label>State</label><span>@_order.State</span></div>
+			<div class="info-item"><label>Status</label><span>@_order.Status</span></div>
+			<div class="info-item"><label>Address</label><span>@_order.Address</span></div>
+			<div class="info-item"><label>Cost</label><span>@_order.Cost.ToString("F2") BYN</span></div>
+			<div class="info-item"><label>Created</label><span>@_order.Created</span></div>
+			<div class="info-item"><label>Preferred Delivery</label><span>@_order.PreferredDeliveryTime</span></div>
+			<div class="info-item"><label>Duration</label><span>@_order.Duration</span></div>
+			<div class="info-item"><label>Total Weight</label><span>@_order.TotalWeight</span></div>
+			<div class="info-item"><label>Total Km</label><span>@_order.TotalKm</span></div>
+			<div class="info-item"><label>Region Level</label><span>@_order.RegionLevelId</span></div>
+			<div class="info-item"><label>Loading Place</label><span>@(_order.LoadingPlace?.Name ?? "-")</span></div>
+			<div class="info-item"><label>User</label><span>@(_order.UserInfo?.FirstName ?? "") @(_order.UserInfo?.LastName ?? "")</span></div>
+		</div>
+	</div>
+
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Location</h3>
+		</div>
+		<div class="info-grid">
+			@RenderLocation(_order.Location, "Order location")
+			<div class="info-item">
+				@{
+                    var level = _levels.FirstOrDefault(l => l.Id == _order.RegionLevelId);
+					if(level is not null)
+					{
+						<TriangleMap Triangles="@level.Triangles"
+									 LevelType="@level.Type"
+									 ShowTitle="true"
+									 MapHeight="240px" />
+                    }
+				}
+			</div>
+		</div>
+	</div>
+
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Material Information</h3>
+		</div>
+		@if(_order.LoadingPlace?.MaterialType is not null)
+		{
+            var type = _order.LoadingPlace.MaterialType;
+			@if(!string.IsNullOrEmpty(type.Photo))
+			{
+				<div class="info-item full-width">
+					<span class="info-label">Photo:</span>
+					<div class="company-photo">
+						<img src="@type.Photo" alt="@type.Name" />
+					</div>
+				</div>
+			}
+			<div class="info-grid">
+				<div class="info-item"><label>Name</label><span>@type.Name</span></div>
+				<div class="info-item"><label>Description</label><span>@type.Description</span></div>
+				<div class="info-item"><label>Solidity</label><span>@type.Solidity</span></div>
+			</div>
+		}
+	</div>
+
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Provider Information</h3>
+		</div>
+		@if(_order.LoadingPlace?.Producer?.Company?.CompanyInfo is not null)
+		{
+			@if(!string.IsNullOrEmpty(_order.LoadingPlace.Producer.Company.CompanyInfo!.Photo))
+			{
+				<div class="info-item full-width">
+					<span class="info-label">Photo:</span>
+					<div class="company-photo">
+						<img src="@_order.LoadingPlace.Producer.Company.CompanyInfo!.Photo" alt="@_order.LoadingPlace.Producer.Company.Name" />
+					</div>
+				</div>
+			}
+			<div class="info-grid">
+				<div class="info-item"><label>Legal Type</label><span>@_order.LoadingPlace.Producer.Company.CompanyInfo!.LegalType</span></div>
+				<div class="info-item"><label>Name</label><span>@_order.LoadingPlace.Producer.Company.Name</span></div>
+				<div class="info-item"><label>Account</label><span>@_order.LoadingPlace.Producer.Company.CompanyInfo!.BankAccount.BankNumber @_order.LoadingPlace.Producer.Company.CompanyInfo?.BankAccount.BIC</span></div>
+				<div class="info-item"><label>Email</label><span>@(string.IsNullOrEmpty(_order.LoadingPlace.Producer.Company.CompanyInfo?.CorporateEmail) ? "-" : _order.LoadingPlace.Producer.Company.CompanyInfo?.CorporateEmail)</span></div>
+				<div class="info-item"><label>Address</label><span>@_order.LoadingPlace.Producer.Company.CompanyInfo?.Address</span></div>
+				<div class="info-item"><label>Unp</label><span>@_order.LoadingPlace.Producer.Company.CompanyInfo?.UNP</span></div>
+				<div class="info-item"><label>Producer Name</label><span>@_order.LoadingPlace.Producer.Name</span></div>
+				<div class="info-item"><label>Loading Place</label><span>@_order.LoadingPlace.Name</span></div>
+				<div class="info-item"><label>Cost</label><span>@_order.LoadingPlace.Cost.ToString("F2")</span></div>
+				<div class="info-item"><label>Volume</label><span>@_order.LoadingPlace.Volume</span></div>
+				@RenderLocation(_order.LoadingPlace.Producer.Company.Location, "Provider company Location")
+				@RenderLocation(_order.LoadingPlace.Location, "Loading Place Location")
+			</div>
+		}
+	</div>
+
+	<!-- Calculation Info -->
+	@if (_calculationInfo != null)
+	{
+		<div class="content-card">
+			<div class="card-header">
+				<h3>Cost Calculation</h3>
+			</div>
+			<div class="info-grid">
+				<div class="info-item"><label>Total Cost</label><span>@_calculationInfo.TotalCost.ToString("F2") BYN</span></div>
+				<div class="info-item"><label>Material Cost</label><span>@_calculationInfo.MaterialCost.ToString("F2") BYN</span></div>
+				<div class="info-item"><label>Commission</label><span>@_calculationInfo.Commission.ToString("F2") BYN</span></div>
+			</div>
+			<div class="card-header">
+				<h3>Deliveries Calculation</h3>
+			</div>
+			@foreach (var d in _calculationInfo.DeliveryInfo)
+			{
+				<div class="info-grid">
+					<div class="info-item"><label>Rebate</label><span>@(d.DeliveryRebate * 100).ToString("F2")</span></div>
+					<div class="info-item"><label>Vat</label><span>@(d.Vat * 100).ToString("F2")</span></div>
+					<div class="info-item"><label>Netto Cost</label><span>@d.Cost.ToString("F2") BYN</span></div>
+					<div class="info-item"><label>Total Price</label><span>@d.TotalPrice.ToString("F2") BYN</span></div>
+					<div class="info-item"><label>Weight</label><span>@d.Weight.ToString("F2") KG</span></div>
+				</div>
+			}
+		</div>
+	}
+
+	<!-- Deliveries ();-->
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Deliveries</h3>
+		</div>
+		@if (_order.Deliveries != null && _order.Deliveries.Any())
+		{
+			@foreach (var deliveryGroup in _order.Deliveries.GroupBy(d => d.NetoWeight))
+			{
+				<div class="card-header" style="background-color: #f8f9fa;">
+					<h4>Weight: @deliveryGroup.Key</h4>
+				</div>
+				<div style="overflow-x: auto;">
+					<table class="table">
+						<thead>
+							<tr>
+								<th>State</th>
+								<th>Cost</th>
+								<th>Weight (Net/Gross/Applied)</th>
+								<th>Driver</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach (var d in deliveryGroup)
+							{
+								<tr>
+									<td data-label="State">@d.State</td>
+									<td data-label="Cost">@d.DeliveryCost.ToString("F2") BYN</td>
+									<td data-label="Weight">@d.NetoWeight / @d.GrossWeight / @d.AppliedWeight </td>
+									<td data-label="Driver">
+										@if (d.Driver != null)
+										{
+											 <div>
+												<div>@d.Driver.UserInfo?.FirstName @d.Driver.UserInfo?.LastName</div>
+												@{ var driverVehicle = d.Driver.Vehicles?.FirstOrDefault(); }
+												@if (driverVehicle != null)
+												{
+													<div style="font-size: 0.85em; color: #666;">
+														🚗 @driverVehicle.Model <span style="font-family: monospace;">(@driverVehicle.RegistrationNumber)</span>
+													</div>
+												}
+											 </div>
+										}
+										else
+										{
+											 <span>-</span>
+										}
+									</td>
+									<td data-label="Action"></td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+
+				@if (deliveryGroup.Any(d => d.Driver == null))
+				{
+					<div class="accept-form" style="margin: 10px; padding: 10px; border: 1px solid #dee2e6;">
+						<p><strong>Assign driver to an available delivery with Weight @deliveryGroup.Key:</strong></p>
+						<select @bind:get="_selectedDriverIds.GetValueOrDefault(deliveryGroup.Key)"
+								@bind:set="(val) => _selectedDriverIds[deliveryGroup.Key] = val"
+								class="form-control" style="margin-bottom: 10px; display: inline-block; width: auto;">
+							<option value="@Guid.Empty">Select a driver...</option>
+							@foreach (var (company, driver) in _driversWithCompany)
+							{
+								<option value="@driver.Id">@company.Name @(driver.UserInfo?.MobilePhone) @(string.IsNullOrWhiteSpace(driver.UserInfo?.FirstName) ? "Unknown" : driver.UserInfo?.FirstName) </option>
+							}
+						</select>
+
+						<button class="btn btn-success btn-sm" 
+								@onclick="() => RequestAcceptDelivery(deliveryGroup.Key)">
+							Accept
+						</button>
+					</div>
+				}
+			}
+		}
+		else
+		{
+			<p>No deliveries found.</p>
+		}
+	</div>
+
+	<!-- Transactions -->
+	<div class="content-card">
+		<div class="card-header">
+			<h3>Transactions</h3>
+		</div>
+		@if (_order.Transactions != null && _order.Transactions.Any())
+		{
+			<div style="overflow-x: auto;">
+				<table class="table">
+					<thead>
+						<tr>
+							<th>Date</th>
+							<th>Amount</th>
+							<th>Status</th>
+							<th>Method</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var t in _order.Transactions)
+						{
+							<tr>
+								<td data-label="Date">@t.Date</td>
+								<td data-label="Amount">@t.Amount.ToString("F2")</td>
+								<td data-label="Status">@t.Status</td>
+								<td data-label="Method">@t.PaymentMethod</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+		else
+		{
+			<p>No transactions found.</p>
+		}
+	</div>
+}
+
+@code {
+	private RenderFragment RenderLocation(Location location, string title) => __builder =>
+	{
+		<div class="info-item">
+			<LocationMapPicker InitialLocation="@location"
+				MapHeight="240px"
+				ShowInputs="false"
+				Title="@title"
+				OnLocationChanged="_ => {}" />
+		</div>		
+	};
+}

@@ -1,0 +1,154 @@
+@using WebWasm.Models
+
+@if (IsOpen)
+{
+	<div class="modal-overlay" @onclick="CloseModal">
+		<div class="modal-container modal-large" @onclick:stopPropagation="true">
+			<div class="modal-header">
+				<h2>@(IsEditMode ? "Edit Company" : "Add New Company")</h2>
+				<button class="btn-close" @onclick="CloseModal">×</button>
+			</div>
+
+			<div class="modal-body">
+				<!-- Company Details Section -->
+				<div class="form-section">
+					<h3>Company Details</h3>
+					<div class="form-row">
+						<div class="form-group">
+							<label>Name *</label>
+								<input type="text"
+									   class="form-control"
+									   @bind="_name"
+									   placeholder="Enter company name" />
+						</div>
+
+						<div class="form-group">
+							<label>UNP *</label>
+							<input type="text"
+								   class="form-control"
+								   @bind="_unp"
+								   placeholder="Enter UNP"
+								   disabled="@IsEditMode" />
+							@if (IsEditMode)
+							{
+								<small class="form-help">UNP name cannot be changed</small>
+							}
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label>Address *</label>
+						<input type="text"
+							   class="form-control"
+							   @bind="_address"
+							   placeholder="Enter address" />
+					</div>
+
+					<div class="form-row">
+						<div class="form-group">
+							<label>Corporate Email *</label>
+							<input type="email"
+								   class="form-control"
+								   @bind="_corporateEmail"
+								   placeholder="company@example.com" />
+						</div>
+
+						<div class="form-group">
+							<label>Legal Type *</label>
+							<input type="text"
+								   class="form-control"
+								   @bind="_legalType"
+								   placeholder="e.g., LLC, JSC, etc." 
+								   disabled="@IsEditMode" />
+							@if (IsEditMode)
+							{
+								<small class="form-help">Legal Type name cannot be changed</small>
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- Bank Account Section -->
+				<div class="form-section">
+					<h3>Bank Account</h3>
+					<div class="form-row">
+						<div class="form-group">
+							<label>Bank Number *</label>
+							<input type="text"
+								   class="form-control"
+								   @bind="_bankNumber"
+								   placeholder="Enter bank account number"
+								   disabled="@IsEditMode" />
+							@if (IsEditMode)
+							{
+								<small class="form-help">Bank Number name cannot be changed</small>
+							}
+						</div>
+
+						<div class="form-group">
+							<label>BIC *</label>
+							<input type="text"
+								   class="form-control"
+								   @bind="_bic"
+								   placeholder="Enter BIC code"
+								   disabled="@IsEditMode" />
+							@if (IsEditMode)
+							{
+								<small class="form-help">BIC name cannot be changed</small>
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- Operational Info Section -->
+				<div class="form-section">
+					<h3>Operational Information</h3>
+					<div class="form-group">
+						<label>Rebate</label>
+						<input type="number"
+							   class="form-control"
+							   @bind="_rebate"
+							   step="0.01"
+							   min="0"
+							   placeholder="0.00" />
+					</div>
+
+					<div class="form-group">
+						<label>Photo URL</label>
+						<input type="text"
+							   class="form-control"
+							   @bind="_photo"
+							   placeholder="Enter company photo URL (optional)" />
+						@if (!string.IsNullOrEmpty(_photo))
+						{
+							<div class="photo-preview">
+								<img src="@_photo" alt="Company preview" />
+							</div>
+						}
+					</div>
+
+					<div class="form-group">
+						<label>Location *</label>
+						<LocationMapPicker @ref="_locationPicker"
+										   InitialLocation="@_location"
+										   OnLocationChanged="HandleLocationChanged" />
+					</div>
+				</div>
+
+				@if (!string.IsNullOrEmpty(_errorMessage))
+				{
+					<div class="error-message">
+						⚠️ @_errorMessage
+					</div>
+				}
+			</div>
+
+			<div class="modal-footer">
+				<button class="btn-secondary" @onclick="CloseModal">Cancel</button>
+				<button class="btn-primary" @onclick="HandleSubmit" disabled="@(!IsValid)">
+					@(IsEditMode ? "Update Company" : "Create Company")
+				</button>
+			</div>
+		</div>
+	</div>
+}

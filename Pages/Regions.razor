@@ -1,0 +1,48 @@
+﻿@page "/regions"
+@using WebWasm.Components
+
+<PageTitle>Regions</PageTitle>
+
+<div class="page-header">
+	<h1>🌍 Regions</h1>
+	<p class="page-subtitle">Manage geographical regions and delivery levels</p>
+</div>
+
+<div class="content-card">
+	<div class="card-header">
+		<h3>Region List</h3>
+		<button class="btn-primary" @onclick="OpenAddRegionModal">+ Add Region</button>
+	</div>
+	<RegionsTable @ref="_regionsTableRef"
+				  Regions="@_regions"
+				  OnView="@HandleViewDetails"
+				  OnEdit="@HandleEditRegion"
+				  OnDelete="@HandleDeleteRegion" />
+</div>
+
+<RegionModal IsOpen="@_isRegionModalOpen"
+			 EditingRegion="@_editingRegion"
+			 OnClose="@CloseRegionModal"
+			 OnSubmit="@HandleRegionSubmit" />
+
+<RegionDetailsModal IsOpen="@_isDetailsModalOpen"
+					 Region="@_viewingRegion"
+					 OnClose="@CloseDetailsModal"
+					 OnAddLevel="@HandleAddLevel"
+					 OnDeleteLevel="@HandleDeleteLevel"
+					 OnEditLevel="@HandleEditLevel" />
+
+<LevelEditor IsOpen="@_isLevelEditorOpen"
+			 Region="@_editingLevelRegion"
+			 EditingLevel="@_editingLevel"
+			 OnClose="@CloseLevelEditor"
+			 OnSubmit="@HandleLevelSubmit" />
+
+<ConfirmDialog IsOpen="@_isConfirmOpen"
+			   Title="@_confirmTitle"
+			   Message="@_confirmMessage"
+			   ConfirmText="@_confirmText"
+			   CancelText="Cancel"
+			   OnConfirm="@HandleConfirm"
+			   OnCancel="@CloseConfirm"
+			   IsDangerous="true" />

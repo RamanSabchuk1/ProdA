@@ -1,0 +1,162 @@
+﻿@using Microsoft.AspNetCore.Components.QuickGrid
+@using WebWasm.Models
+@page "/orders"
+
+<PageTitle>Orders 📦</PageTitle>
+<HeadContent>
+	<meta name="description" content="Manage and track all orders in the system.📦" />
+</HeadContent>
+
+<div class="page-header">
+	<h1>📦 Orders</h1>
+	<p class="page-subtitle">Manage and track all orders</p>
+</div>
+
+<div class="stats-grid">
+	<div class="stat-card">
+		<span class="stat-icon">📊</span>
+		<div class="stat-content">
+			<span class="stat-value">@_totalOrders</span>
+			<span class="stat-label">Total Orders</span>
+		</div>
+	</div>
+	<div class="stat-card">
+		<span class="stat-icon">⏳</span>
+		<div class="stat-content">
+			<span class="stat-value">@_pendingOrders</span>
+			<span class="stat-label">Pending</span>
+		</div>
+	</div>
+	<div class="stat-card">
+		<span class="stat-icon">✅</span>
+		<div class="stat-content">
+			<span class="stat-value">@_completedOrders</span>
+			<span class="stat-label">Completed</span>
+		</div>
+	</div>
+</div>
+
+<div class="content-card">
+	<div class="card-header">
+		<h3>Orders</h3>
+	</div>
+
+
+	<div class="data-grid-container">
+		<div class="data-grid-toolbar">
+			<input type="text"
+				   placeholder="Search..."
+				   @bind="_searchText"
+				   @bind:event="oninput"
+				   class="search-input" />
+
+			<button class="filter-toggle-btn" @onclick="() => _showFilters = !_showFilters">
+				<span>🔍 Filters</span>
+				@if (_selectedStatuses.Count > 0 || _minWeight.HasValue || _maxWeight.HasValue)
+				{
+					<span class="filter-count-badge">
+						@(_selectedStatuses.Count + (_minWeight.HasValue ? 1 : 0) + (_maxWeight.HasValue ? 1 : 0))
+					</span>
+				}
+				<span class="filter-toggle-icon">@(_showFilters ? "▲" : "▼")</span>
+			</button>
+		</div>
+
+		@if (_showFilters)
+		{
+			<div class="filters-panel">
+				<div class="filter-row">
+					<label class="filter-label">Weight Range</label>
+					<div class="filter-control range-control">
+						<div class="range-input-group">
+							<span class="range-value">@CurrentMinWeight.ToString("F2")</span>
+							<input type="range"
+								   value="@CurrentMinWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   @onchange="OnMinWeightChanged"
+								   min="@_weightRangeMin.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   max="@_weightRangeMax.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   step="@_weightStep.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   disabled="@_weightFilterDisabled"
+								   class="range-slider" title="Min Weight" />
+							<span class="range-label">Min</span>
+						</div>
+						<div class="range-input-group">
+							<span class="range-value">@CurrentMaxWeight.ToString("F2")</span>
+							<input type="range"
+								   value="@CurrentMaxWeight.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   @onchange="OnMaxWeightChanged"
+								   min="@_weightRangeMin.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   max="@_weightRangeMax.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   step="@_weightStep.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+								   disabled="@_weightFilterDisabled"
+								   class="range-slider" title="Max Weight" />
+							<span class="range-label">Max</span>
+						</div>
+						@if (_minWeight.HasValue || _maxWeight.HasValue)
+						{
+							<button class="clear-filter-btn" @onclick="ClearWeightFilter" title="Clear">&times;</button>
+						}
+					</div>
+				</div>
+
+				<div class="filter-row">
+					<label class="filter-label">Statuses</label>
+					<div class="filter-control">
+						<select @onchange="AddStatus" class="search-input filter-select" value="">
+							<option value="" disabled selected hidden>Select Status...</option>
+							@foreach (var status in Enum.GetValues<OrderStatus>().Where(s => !_selectedStatuses.Contains(s)))
+							{
+								<option value="@status">@status</option>
+							}
+						</select>
+
+						@if (_selectedStatuses.Count > 0)
+						{
+							<div class="selected-statuses">
+								@foreach (var status in _selectedStatuses)
+								{
+									<span class="badge @GetStatus(status) status-pill" @onclick="() => RemoveStatus(status)" title="Click to remove">
+										@status <span class="pill-remove">&times;</span>
+									</span>
+								}
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		}
+
+		@if (_hasItems)
+		{
+			<div class="data-grid-scroll">
+				<QuickGrid Items="@FilteredOrders" Pagination="@_pagination" class="data-grid">
+					<TemplateColumn Title="Name" Sortable="true" SortBy="@(GridSort<Order>.ByAscending(x => x.Name))">
+						<div class="clickable-cell" @onclick="@(() => NavigateToOrder(context.Id))">
+							@context.Name
+						</div>
+					</TemplateColumn>
+					<PropertyColumn Property="@(v => v.Cost)" Title="Cost BYN" Sortable="true" />
+					<TemplateColumn Title="Status" Sortable="false">
+						<span class="badge @GetStatus(context.Status)">@context.Status</span>
+					</TemplateColumn>
+					<PropertyColumn Property="@(v => v.Created)" Title="Created" Sortable="true" />
+					<TemplateColumn Title="Address" Sortable="false">
+						<div class="address">@context.Address</div>
+					</TemplateColumn>
+					<PropertyColumn Property="@(v => v.TotalWeight)" Title="Weight" Sortable="true" />
+					<PropertyColumn Property="@(v => v.PreferredDeliveryTime)" Title="Delivered At" Sortable="true" />
+				</QuickGrid>
+			</div>
+
+			<div class="data-grid-pagination">
+				<CustomPaginator State="@_pagination" />
+			</div>
+		}
+		else
+		{
+			<div class="empty-state">
+				<p>No orders available</p>
+			</div>
+		}
+	</div>
+</div>

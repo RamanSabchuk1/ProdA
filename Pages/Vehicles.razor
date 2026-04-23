@@ -1,0 +1,48 @@
+﻿@page "/vehicles"
+@using WebWasm.Services
+@inject CashService CashService
+@inject ApiClient ApiClient
+@inject ToastService ToastService
+@inject LoadingService LoadingService
+
+<PageTitle>Vehicles</PageTitle>
+
+<div class="vehicles-container">
+	<div class="page-header">
+		<div>
+			<h1>🚛 Vehicles</h1>
+			<p class="page-subtitle">Manage vehicle fleet</p>
+		</div>
+		<button class="btn-create" @onclick="OpenCreateModal">
+			➕ Add Vehicle
+		</button>
+	</div>
+
+	<div class="content-card">
+		@if (_vehicles != null)
+		{
+			<VehiclesTable @key="_vehiclesKey" Items="@_vehicles" OnDelete="ShowDeleteConfirmation" />
+		}
+		else
+		{
+			<div class="loading">Loading vehicles...</div>
+		}
+	</div>
+</div>
+
+@if (_showCreateModal)
+{
+	<VehicleModal DriversWithCompany="@_driverWithCompany"
+				   IsEditMode="false"
+				   OnSubmit="CreateVehicle" 
+				   OnCancel="CloseCreateModal" />
+}
+
+<ConfirmDialog IsOpen="@_showDeleteConfirm"
+			   Title="Confirm Delete"
+			   Message="@_deleteConfirmMessage"
+			   ConfirmText="Delete"
+			   CancelText="Cancel"
+			   OnConfirm="ConfirmDelete"
+			   OnCancel="CancelDelete" />
+

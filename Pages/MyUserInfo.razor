@@ -1,0 +1,71 @@
+﻿@page "/myuserinfo"
+
+<PageTitle>My Profile</PageTitle>
+
+<div class="content-card">
+	<div class="profile-card">
+		<div class="profile-header">
+			<div class="profile-avatar">👤</div>
+			<h2>My Profile</h2>
+			<p class="profile-subtitle">Update your personal information @_userInfo?.MobilePhone</p>
+		</div>
+
+		@if (_userInfo is not null)
+		{
+			<EditForm Model="@_updateUser" OnValidSubmit="HandleSave" class="profile-form">
+				<DataAnnotationsValidator />
+			
+				<div class="form-group">
+					<label for="firstName">First Name</label>
+					<InputText id="firstName" @bind-Value="_updateUser.FirstName" placeholder="Enter first name" class="form-input" />
+					<ValidationMessage For="@(() => _updateUser.FirstName)" />
+				</div>
+			
+				<div class="form-group">
+					<label for="middleName">Middle Name</label>
+					<InputText id="middleName" @bind-Value="_updateUser.MiddleName" placeholder="Enter middle name" class="form-input" />
+					<ValidationMessage For="@(() => _updateUser.MiddleName)" />
+				</div>
+
+				<div class="form-group">
+					<label for="lastName">Last Name</label>
+					<InputText id="lastName" @bind-Value="_updateUser.LastName" placeholder="Enter last name" class="form-input" />
+					<ValidationMessage For="@(() => _updateUser.LastName)" />
+				</div>
+
+				<button type="submit" class="save-button">
+					<span>Save Changes</span>
+				</button>
+			</EditForm>
+		}
+	</div>
+
+	<div class="notification-section">
+		<PushSubscription />
+	</div>
+
+	<div class="content-card">
+		<div class="card-header">
+			<h4>Notification History</h4>
+		</div>
+		@if (_notifications.Any())
+		{
+			<div class="notification-list">
+				@foreach (var note in _notifications)
+				{
+					<div class="notification-item" @onclick="() => NavigateToNotification(note)">
+						<div class="note-header">
+							<span class="note-title">@note.Title</span>
+							<span class="note-time">@note.Timestamp.ToLocalTime().ToString("g")</span>
+						</div>
+						<div class="note-body">@note.Body</div>
+					</div>
+				}
+			</div>
+		}
+		else
+		{
+			<div class="empty-state">No recent notifications</div>
+		}
+	</div>
+</div>

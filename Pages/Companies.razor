@@ -1,0 +1,33 @@
+﻿@page "/companies"
+@using WebWasm.Components
+
+<PageTitle>Companies</PageTitle>
+
+<div class="page-header">
+	<h1>🏢 Companies</h1>
+	<p class="page-subtitle">Manage registered companies</p>
+</div>
+
+<div class="content-card">
+	<div class="card-header">
+		<h3>Company List</h3>
+		<button class="btn-primary" @onclick="OpenAddCompanyModal">+ Add Company</button>
+	</div>
+	<CompaniesTable @ref="_companiesTableRef"
+					Companies="@_companies"
+					OnToggleActive="@HandleToggleActive"
+					OnEditCompany="@HandleEditCompany" />
+</div>
+
+<CompanyModal IsOpen="@_isCompanyModalOpen"
+			  EditingCompany="@_editingCompany"
+			  OnClose="@CloseCompanyModal"
+			  OnSubmit="@HandleCompanySubmit" />
+
+<ConfirmDialog IsOpen="@_showConfirmDialog"
+			   Title="@_confirmTitle"
+			   Message="@_confirmMessage"
+			   ConfirmText="Confirm"
+			   CancelText="Cancel"
+			   OnConfirm="@HandleConfirm"
+			   OnCancel="@CloseConfirmDialog" />

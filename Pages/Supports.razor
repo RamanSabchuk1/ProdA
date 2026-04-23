@@ -1,0 +1,16 @@
+﻿@page "/supports"
+@using WebWasm.Components
+
+<PageTitle>Support</PageTitle>
+
+<div class="page-header">
+	<h1>⚙️ Support</h1>
+	<p class="page-subtitle">Manage support tickets and inquiries</p>
+</div>
+
+<div class="content-card">
+	<div class="card-header">
+		<h3>Suggestion List</h3>
+	</div>
+	<SuggestionsTable @ref="_suggestionsTableRef" Suggestions="@_suggestions" OnApply="@HandleApply" />
+</div>
