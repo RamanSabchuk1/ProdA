@@ -73,6 +73,7 @@ public static class SerializationHelper
 [JsonSerializable(typeof(CreateDriver))]
 [JsonSerializable(typeof(CreateDriverSlot))]
 [JsonSerializable(typeof(CreateDriverSlot[]))]
+[JsonSerializable(typeof(List<CreateDriverSlot>))]
 [JsonSerializable(typeof(MutateLoadingPlace))]
 [JsonSerializable(typeof(UpdateProducer))]
 [JsonSerializable(typeof(UpdateRegion))]
