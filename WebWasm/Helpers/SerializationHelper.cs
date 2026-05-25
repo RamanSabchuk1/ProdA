@@ -93,6 +93,7 @@ public static class SerializationHelper
 [JsonSerializable(typeof(Triangle))]
 [JsonSerializable(typeof(LoadingPlace))]
 [JsonSerializable(typeof(Delivery))]
+[JsonSerializable(typeof(CreateDriver))]
 [JsonSerializable(typeof(Transaction))]
 [JsonSerializable(typeof(Transaction[]))]
 [JsonSerializable(typeof(CompanyInfo))]
