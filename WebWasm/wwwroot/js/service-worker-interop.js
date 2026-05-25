@@ -98,7 +98,7 @@ window.serviceWorkerInterop = {
 
 	getNotifications: function () {
 		return new Promise((resolve, reject) => {
-			const request = indexedDB.open('webwasm-db', 1);
+			const request = indexedDB.open('proda-db', 1);
 
 			request.onupgradeneeded = function (event) {
 				const db = event.target.result;
@@ -128,7 +128,7 @@ window.serviceWorkerInterop = {
 
 	saveNotification: function (payload) {
 		try {
-			const request = indexedDB.open('webwasm-db', 1);
+			const request = indexedDB.open('proda-db', 1);
 
 			request.onupgradeneeded = function (event) {
 				const db = event.target.result;

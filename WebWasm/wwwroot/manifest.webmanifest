@@ -1,6 +1,6 @@
 {
-  "name": "WebWasm",
-  "short_name": "WebWasm",
+  "name": "ProdA",
+  "short_name": "ProdA",
   "id": "./",
   "start_url": "./",
   "display": "standalone",
