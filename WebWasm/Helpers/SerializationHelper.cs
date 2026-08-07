@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using WebWasm.Components;
 using WebWasm.Models;
@@ -26,6 +26,10 @@ public static class SerializationHelper
 [JsonSerializable(typeof(double))]
 [JsonSerializable(typeof(Guid))]
 [JsonSerializable(typeof(JsonElement))]
+[JsonSerializable(typeof(DateOnly))]
+[JsonSerializable(typeof(DateOnly?))]
+[JsonSerializable(typeof(DateTime))]
+[JsonSerializable(typeof(DateTime?))]
 [JsonSerializable(typeof(Company))]
 [JsonSerializable(typeof(Company[]))]
 [JsonSerializable(typeof(DeviceToken))]
@@ -76,6 +80,7 @@ public static class SerializationHelper
 [JsonSerializable(typeof(CreateProducer))]
 [JsonSerializable(typeof(CreateVehicle))]
 [JsonSerializable(typeof(CreateRegion))]
+[JsonSerializable(typeof(CreateDriver))]
 [JsonSerializable(typeof(CreateDriverSlot))]
 [JsonSerializable(typeof(CreateDriverSlot[]))]
 [JsonSerializable(typeof(List<CreateDriverSlot>))]
@@ -93,7 +98,6 @@ public static class SerializationHelper
 [JsonSerializable(typeof(Triangle))]
 [JsonSerializable(typeof(LoadingPlace))]
 [JsonSerializable(typeof(Delivery))]
-[JsonSerializable(typeof(CreateDriver))]
 [JsonSerializable(typeof(Transaction))]
 [JsonSerializable(typeof(Transaction[]))]
 [JsonSerializable(typeof(CompanyInfo))]
@@ -107,4 +111,11 @@ public static class SerializationHelper
 [JsonSerializable(typeof(Login.TokenResponse))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(Dictionary<uint, PriceInfo>))]
+[JsonSerializable(typeof(DataSecurityLevel))]
+[JsonSerializable(typeof(SecurityLevelRequest))]
+[JsonSerializable(typeof(EncryptionPurpose))]
+[JsonSerializable(typeof(EncryptionKeyInfo))]
+[JsonSerializable(typeof(EncryptionKeyInfo[]))]
+[JsonSerializable(typeof(BackfillResult))]
+[JsonSerializable(typeof(SetPassportRequest))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext;

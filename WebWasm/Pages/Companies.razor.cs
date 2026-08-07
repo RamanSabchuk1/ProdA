@@ -14,7 +14,7 @@ public partial class Companies : ComponentBase
 
 	private List<Company> _companies = [];
 	private Company? _editingCompany = null;
-    private CompaniesTable? _companiesTableRef;
+	private CompaniesTable? _companiesTableRef;
 	private bool _isCompanyModalOpen = false;
 	private bool _showConfirmDialog = false;
 	private string _confirmTitle = string.Empty;
@@ -26,13 +26,72 @@ public partial class Companies : ComponentBase
 		await LoadCompanies(true);
 	}
 
-    private void HandleEditCompany(Company company)
-    {
-        _editingCompany = company;
-        _isCompanyModalOpen = true;
-    }
+	private void HandleEditCompany(Company company)
+	{
+		_editingCompany = company;
+		_isCompanyModalOpen = true;
+	}
 
-    private async Task LoadCompanies(bool useCash)
+	private bool _showSecurityLevelModal;
+	private Company? _securityLevelTargetCompany;
+	private DataSecurityLevel _securityLevelCurrent;
+
+	private async Task HandleEditSecurityLevel(Company company)
+	{
+		await LoadingService.ExecuteWithLoading(async () =>
+		{
+			try
+			{
+				var response = await ApiClient.Get<SecurityLevelRequest>($"admin/security-levels/companies/{company.Id}");
+				_securityLevelTargetCompany = company;
+				_securityLevelCurrent = response.Level;
+				_showSecurityLevelModal = true;
+			}
+			catch (Exception ex)
+			{
+				ToastService.ShowError($"Failed to load security level: {ex.Message}");
+			}
+		});
+	}
+
+	private void CloseSecurityLevelModal()
+	{
+		_showSecurityLevelModal = false;
+		_securityLevelTargetCompany = null;
+	}
+
+	private async Task ConfirmSecurityLevel(DataSecurityLevel newLevel)
+	{
+		if (_securityLevelTargetCompany is null)
+		{
+			return;
+		}
+
+		var companyId = _securityLevelTargetCompany.Id;
+		var oldLevel = _securityLevelCurrent;
+		CloseSecurityLevelModal();
+
+		if (oldLevel == newLevel)
+		{
+			return;
+		}
+
+		await LoadingService.ExecuteWithLoading(async () =>
+		{
+			try
+			{
+				await ApiClient.Put($"admin/security-levels/companies/{companyId}", new SecurityLevelRequest(newLevel));
+				await LoadCompanies(false);
+				ToastService.ShowSuccess("Security level updated successfully");
+			}
+			catch (Exception ex)
+			{
+				ToastService.ShowError($"Failed to update security level: {ex.Message}");
+			}
+		});
+	}
+
+	private async Task LoadCompanies(bool useCash)
 	{
 		_companies = [.. await CashService.GetData<Company>(useCash)];
 	}
@@ -54,8 +113,8 @@ public partial class Companies : ComponentBase
 		var (createCompany, updateCompany, companyId) = submit;
 		if (createCompany is null && updateCompany is null)
 		{
-            ToastService.ShowWarning("There is no Company");
-            return;
+			ToastService.ShowWarning("There is no Company");
+			return;
 		}
 
 		await LoadingService.ExecuteWithLoading(async () =>
@@ -64,9 +123,9 @@ public partial class Companies : ComponentBase
 			{
 				if (createCompany is null)
 				{
-                    await ApiClient.Put($"Companies/{companyId}", updateCompany);
-                    ToastService.ShowSuccess("Company updated successfully!");
-                }
+					await ApiClient.Put($"Companies/{companyId}", updateCompany);
+					ToastService.ShowSuccess("Company updated successfully!");
+				}
 				else
 				{
 					await ApiClient.Post("Companies", createCompany);
@@ -112,7 +171,9 @@ public partial class Companies : ComponentBase
 	{
 		var company = _companies.FirstOrDefault(c => c.Id == data.CompanyId);
 		if (company is null)
+		{
 			return;
+		}
 
 		var action = data.IsActive ? "activate" : "deactivate";
 		_confirmTitle = $"Confirm {action.ToUpper()} Company";

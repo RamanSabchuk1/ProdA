@@ -1,4 +1,4 @@
-﻿using Blazored.LocalStorage;
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.QuickGrid;
 using WebWasm.Models;
@@ -74,6 +74,132 @@ public partial class Users : ComponentBase
 	private User? _assignCompanyTargetUser;
 	private Guid _assignCompanyId = Guid.Empty;
 	private string _assignCompanyError = string.Empty;
+
+	private bool _showSecurityLevelModal;
+	private User? _securityLevelTargetUser;
+	private DataSecurityLevel _securityLevelCurrent;
+
+	private bool _showPassportModal;
+	private User? _passportTargetUser;
+	private string _passportNumber = string.Empty;
+	private string _passportIdentificationNumber = string.Empty;
+	private string _passportIssuedBy = string.Empty;
+	private DateOnly _passportIssuedDate = default;
+	private string _passportErrorMessage = string.Empty;
+
+	private void OpenPassportModal(User user)
+	{
+		_passportTargetUser = user;
+		_passportNumber = string.Empty;
+		_passportIdentificationNumber = string.Empty;
+		_passportIssuedBy = string.Empty;
+		_passportIssuedDate = default;
+		_passportErrorMessage = string.Empty;
+		_showPassportModal = true;
+	}
+
+	private void ClosePassportModal()
+	{
+		_showPassportModal = false;
+		_passportTargetUser = null;
+		_passportNumber = string.Empty;
+		_passportIdentificationNumber = string.Empty;
+		_passportIssuedBy = string.Empty;
+		_passportIssuedDate = default;
+		_passportErrorMessage = string.Empty;
+	}
+
+	private async Task SubmitPassport()
+	{
+		if (_passportTargetUser is null)
+		{
+			return;
+		}
+
+		var number = string.IsNullOrWhiteSpace(_passportNumber) ? null : _passportNumber.Trim();
+		var identificationNumber = string.IsNullOrWhiteSpace(_passportIdentificationNumber) ? null : _passportIdentificationNumber.Trim();
+		var issuedBy = string.IsNullOrWhiteSpace(_passportIssuedBy) ? null : _passportIssuedBy.Trim();
+		DateOnly? issuedDate = _passportIssuedDate == default ? null : _passportIssuedDate;
+
+		if (number is null && identificationNumber is null && issuedBy is null && issuedDate is null)
+		{
+			_passportErrorMessage = "Please fill in at least one field.";
+			return;
+		}
+
+		var userInfoId = _passportTargetUser.UserInfo.Id;
+		var request = new SetPassportRequest(number, identificationNumber, issuedBy, issuedDate);
+
+		await LoadingService.ExecuteWithLoading(async () =>
+		{
+			try
+			{
+				await ApiClient.Post($"users/{userInfoId}/passport", request);
+				ToastService.ShowSuccess("Passport data set successfully");
+				ClosePassportModal();
+				await LoadData(false);
+			}
+			catch (Exception ex)
+			{
+				_passportErrorMessage = $"Failed to set passport data: {ex.Message}";
+			}
+		});
+	}
+
+	private async Task OpenSecurityLevelModal(User user)
+	{
+		await LoadingService.ExecuteWithLoading(async () =>
+		{
+			try
+			{
+				var response = await ApiClient.Get<SecurityLevelRequest>($"admin/security-levels/users/{user.Id}");
+				_securityLevelTargetUser = user;
+				_securityLevelCurrent = response.Level;
+				_showSecurityLevelModal = true;
+			}
+			catch (Exception ex)
+			{
+				ToastService.ShowError($"Failed to load security level: {ex.Message}");
+			}
+		});
+	}
+
+	private void CloseSecurityLevelModal()
+	{
+		_showSecurityLevelModal = false;
+		_securityLevelTargetUser = null;
+	}
+
+	private async Task ConfirmSecurityLevel(DataSecurityLevel newLevel)
+	{
+		if (_securityLevelTargetUser is null)
+		{
+			return;
+		}
+
+		var userId = _securityLevelTargetUser.Id;
+		var oldLevel = _securityLevelCurrent;
+		CloseSecurityLevelModal();
+
+		if (oldLevel == newLevel)
+		{
+			return;
+		}
+
+		await LoadingService.ExecuteWithLoading(async () =>
+		{
+			try
+			{
+				await ApiClient.Put($"admin/security-levels/users/{userId}", new SecurityLevelRequest(newLevel));
+				await LoadData(false);
+				ToastService.ShowSuccess("Security level updated successfully");
+			}
+			catch (Exception ex)
+			{
+				ToastService.ShowError($"Failed to update security level: {ex.Message}");
+			}
+		});
+	}
 
 	private void OpenAssignCompanyModal(User user)
 	{
@@ -329,23 +455,33 @@ public partial class Users : ComponentBase
 				filtered = filtered.Where(u => GetDriver(u) is null);
 			}
 
-if (_filterRoles.Count > 0)
-{
-filtered = filtered.Where(u => u.Roles.Any(r => _filterRoles.Contains(r)));
-}
+			if (_filterRoles.Count > 0)
+			{
+				filtered = filtered.Where(u => u.Roles.Any(r => _filterRoles.Contains(r)));
+			}
 
-if (_activeUserFilter == ActiveUserFilter.ActiveOnly)
-filtered = filtered.Where(u => u.UserInfo.IsActive);
-else if (_activeUserFilter == ActiveUserFilter.InactiveOnly)
-filtered = filtered.Where(u => !u.UserInfo.IsActive);
+			if (_activeUserFilter == ActiveUserFilter.ActiveOnly)
+			{
+				filtered = filtered.Where(u => u.UserInfo.IsActive);
+			}
+			else if (_activeUserFilter == ActiveUserFilter.InactiveOnly)
+			{
+				filtered = filtered.Where(u => !u.UserInfo.IsActive);
+			}
 
-if (_showCustomersOnly)
-filtered = filtered.Where(u => u.Roles.Count == 0);
+			if (_showCustomersOnly)
+			{
+				filtered = filtered.Where(u => u.Roles.Count == 0);
+			}
 
-if (_verifiedFilter == VerifiedUserFilter.VerifiedOnly)
-filtered = filtered.Where(u => u.UserVerified);
-else if (_verifiedFilter == VerifiedUserFilter.UnverifiedOnly)
-filtered = filtered.Where(u => !u.UserVerified);
+			if (_verifiedFilter == VerifiedUserFilter.VerifiedOnly)
+			{
+				filtered = filtered.Where(u => u.UserVerified);
+			}
+			else if (_verifiedFilter == VerifiedUserFilter.UnverifiedOnly)
+			{
+				filtered = filtered.Where(u => !u.UserVerified);
+			}
 
 			if (!string.IsNullOrWhiteSpace(_searchText))
 			{
@@ -371,19 +507,19 @@ filtered = filtered.Where(u => !u.UserVerified);
 			return;
 		}
 
-_isInitialized = true;
-await LoadData(true);
+		_isInitialized = true;
+		await LoadData(true);
 
-var savedFilters = await LocalStorage.GetItemAsync<UsersFilterState>("users_filters");
-if (savedFilters is not null)
-{
-_userKindFilter = savedFilters.UserKindFilter;
-_filterRoles.AddRange(savedFilters.FilterRoles ?? []);
-_activeUserFilter = savedFilters.ActiveFilter;
-_showCustomersOnly = savedFilters.ShowCustomersOnly;
-_verifiedFilter = savedFilters.VerifiedFilter;
-_searchText = savedFilters.SearchText ?? string.Empty;
-}
+		var savedFilters = await LocalStorage.GetItemAsync<UsersFilterState>("users_filters");
+		if (savedFilters is not null)
+		{
+			_userKindFilter = savedFilters.UserKindFilter;
+			_filterRoles.AddRange(savedFilters.FilterRoles ?? []);
+			_activeUserFilter = savedFilters.ActiveFilter;
+			_showCustomersOnly = savedFilters.ShowCustomersOnly;
+			_verifiedFilter = savedFilters.VerifiedFilter;
+			_searchText = savedFilters.SearchText ?? string.Empty;
+		}
 	}
 
 	private async Task LoadData(bool useCash)
@@ -415,13 +551,13 @@ _searchText = savedFilters.SearchText ?? string.Empty;
 	private int SuperAdminUsers => _users?.Count(user => user.Roles.Contains(RoleType.SuperAdmin)) ?? 0;
 	private int DriverCount => _drivers.Length;
 
-	private Driver? GetDriver(User user)	
+	private Driver? GetDriver(User user)
 		=> _driverByUserInfoId.TryGetValue(user.UserInfo.Id, out var driver) ? driver : null;
 
 	private static Company? GetCompany(User user, Driver? driver)
 		=> user.UserInfo.Company ?? driver?.UserInfo?.Company;
 
-	private IEnumerable<DriverSlot> GetDriverSlots(Guid driverId)
+	private List<DriverSlot> GetDriverSlots(Guid driverId)
 		=> _slotsByDriverId.TryGetValue(driverId, out var slots) ? slots : [];
 
 	private static string GetDisplayName(UserInfo? userInfo)
@@ -436,6 +572,10 @@ _searchText = savedFilters.SearchText ?? string.Empty;
 		var name = string.Join(" ", parts);
 		return string.IsNullOrWhiteSpace(name) ? "Unknown" : name;
 	}
+	// Значение паспортного поля из secure-словаря UserInfo.Passport (ключи backend: passport.*).
+	// Отсутствующий ключ → пустая строка. Значение (в т.ч. issuedDate) выводится КАК ЕСТЬ, без переформатирования.
+	private static string GetPassportValue(IReadOnlyDictionary<string, string> passport, string key)
+		=> passport.TryGetValue(key, out var value) ? value : string.Empty;
 
 	private bool IsExpanded(Guid userId) => _expandedUsers.Contains(userId);
 
@@ -790,7 +930,7 @@ _searchText = savedFilters.SearchText ?? string.Empty;
 			_slotEndTime = lastSlot.EndTime;
 
 		}
-		else if(_newSlots.Count > 0)
+		else if (_newSlots.Count > 0)
 		{
 			var lastNewSlot = _newSlots.MaxBy(s => s.WorkingDay)!;
 			_slotDate = lastNewSlot.WorkingDay.AddDays(1);
@@ -809,16 +949,17 @@ _searchText = savedFilters.SearchText ?? string.Empty;
 	{
 		var regionDrivers = drivers
 			.Where(d => d.UserInfo is not null)
-			.Select(d => {
+			.Select(d =>
+			{
 				var user = users.FirstOrDefault(u => u.UserInfo?.Id == d.UserInfo!.Id);
 				var companyId = user?.UserInfo?.Company?.Id ?? d.UserInfo?.Company?.Id;
 				return (DriverId: d.Id, CompanyId: companyId);
 			})
 			.Where(x => x.CompanyId.HasValue)
 			.Select(x => (x.DriverId, CompanyId: x.CompanyId!.Value))
-			.Join(companies, 
-				d => d.CompanyId, 
-				c => c.Id, 
+			.Join(companies,
+				d => d.CompanyId,
+				c => c.Id,
 				(d, c) => new { d.DriverId, c.RegionId })
 			.GroupBy(x => x.RegionId)
 			.ToDictionary(g => g.Key, g => g.Select(x => x.DriverId).ToList());
